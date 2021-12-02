@@ -1,8 +1,8 @@
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, render_template, redirect, url_for, flash
 from flask.scaffold import F
 from flask_debugtoolbar import DebugToolbarExtension
 from models import db, connect_db, Pet
-from forms import AddPetForm
+from forms import AddPetForm, EditPetForm
 
 # from forms import AddNames
 
@@ -19,34 +19,11 @@ connect_db(app)
 # db.drop_all()  # at first all existing tables if there is any and then create one
 db.create_all()
 
-# @app.route('/wtforms')
-# def check_flask_setup():
-#     return render_template('home.html')
-
-# chekc the wtforms is working properly
-# @app.route('/names')
-# def add_names():
-#     form = AddNames()  # this a form object
-#     return render_template("home.html", form = form)
-
-# check that models.py works fine
-# @app.route('/modlecheck')
-# def check_modleclass():
-#     first_pet = Pet.query.all()
-#     return render_template("home.html", first_pet = first_pet)
-
 @app.route("/")
 def show_all_pets():
     pets = Pet.query.all()
     # pets = db.session.query.all()
     return render_template('home.html', pets = pets)
-
-# @app.route('/add')
-# def add_pet():
-#     # Create a form for adding pets. This should use Flask-WTF, and should have the following fields:
-#     # This should be at the URL path /add. Add a link to this from the homepage.
-#     form = AddPetForm()
-#     return render_template("add_pet.html", form = form)
 
 @app.route('/add', methods=["GET", "POST"])  # database does not render table, fix that and this works
 def handle_add_pet_form():
@@ -67,8 +44,44 @@ def handle_add_pet_form():
     else:
         return render_template("add_pet.html", form = form)
 
+@app.route('/<pet_id_number>')
+def details_about_a_pet(pet_id_number):
+    
+    pet = Pet.query.get_or_404(pet_id_number)
+    form  = EditPetForm(obj = pet)
+
+    if form.validate_on_submit():
+        # pet.name = form.name.data 
+        # pet.species = 
+        pet.photo_url = form.photo_edit.data  # comes form edit form class
+        pet.notes = form.notes_for_edit.data
+        pet.available = form.availability_edit.data
+        db.session.commit()
+        # flash('update successful')
+        return redirect(url_for('show_all_pets'))
+
+    else:
+        # if it fails; re-render the edit form
+        return render_template("pet_edit_form.html", form=form, pet=pet)
+
 
 """
+
+
+Step 6: Add Display/Edit Form
+Make a page that shows some information about the pet:
+
+Name
+Species
+Photo, if present
+Age, if present
+It should also show a form that allows us to edit this pet:
+
+Photo URL
+Notes
+Available
+This should be at the URL /[pet-id-number]. Make the homepage link to this.
+
 
 Step 5: Add Validation
 WTForms gives us lots of useful validators; we want to use these for validating our fields more carefully:
